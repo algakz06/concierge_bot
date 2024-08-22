@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "concierge-bot"
+version = "0.1.0"
+description = ""
+authors = ["algakz06 <77662392+algakz06@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+aiogram = "^3.12.0"
+sqlalchemy = "^2.0.32"
+pydantic = "^2.8.2"
+pydantic-settings = "^2.4.0"
+google-api-python-client = "^2.142.0"
+google-auth-httplib2 = "^0.2.0"
+google-auth-oauthlib = "^1.2.1"
+loguru = "^0.7.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
