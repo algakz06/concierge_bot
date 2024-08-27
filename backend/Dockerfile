@@ -14,13 +14,16 @@ ENV PYTHONFAULTHANDLER=1 \
 
 RUN pip install "poetry==1.8.3"
 
-COPY poetry.lock pyproject.toml ./
+WORKDIR /code
+
+COPY app/poetry.lock app/pyproject.toml ./
 
 RUN poetry config virtualenvs.create false \
     && poetry install --only main --no-interaction --no-ansi
 
 COPY wait-for-postgres.sh ./
-
+ENV PYTHONPATH=/code
 RUN chmod +x wait-for-postgres.sh
 
-COPY app/ app/
+CMD ["alembic", "upgrade", "head"]
+CMD ["poetry", "run", "python3.12", "-m", "app"]

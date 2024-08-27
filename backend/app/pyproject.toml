@@ -15,6 +15,10 @@ google-api-python-client = "^2.142.0"
 google-auth-httplib2 = "^0.2.0"
 google-auth-oauthlib = "^1.2.1"
 loguru = "^0.7.2"
+jinja2 = "^3.1.4"
+redis = "^5.0.8"
+psycopg2-binary = "^2.9.9"
+alembic = "^1.13.2"
 
 
 [build-system]

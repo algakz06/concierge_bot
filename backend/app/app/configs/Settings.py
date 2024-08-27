@@ -10,16 +10,22 @@ class Settings(BaseSettings):
         env_file=".env", env_file_encoding="UTF-8", case_sensitive=True
     )
 
+    TEMPLATES_DIR: str = "app/jinja_templates/"
+
+    ADMIN_TG_ID: str
+
     POSTGRES_DB: str = "postgres"
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "1234"
     POSTGRES_PORT: int = 5432
     POSTGRES_HOST: str = "db"
 
+    REDIS_URL: str = "redis://redis:6379"
+
     TG_TOKEN: str
 
     GS_SCOPES: List[str] = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-    GS_SPREADSHEET_ID: str
+    GS_SPREADSHEET_ID: str = ""
 
     @computed_field
     @property

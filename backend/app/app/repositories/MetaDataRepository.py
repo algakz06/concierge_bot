@@ -9,7 +9,7 @@ from googleapiclient.errors import HttpError
 from app.configs.Settings import settings
 
 
-class GSRepository():
+class MetaDataRepository:
     creds: Credentials
     GS_SCOPES: List[str]
     GS_SPREADSHEET_ID: str
