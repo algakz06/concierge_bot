@@ -23,7 +23,10 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
 
-config.set_main_option("sqlalchemy.url", settings.SQLALCHEMY_DATABASE_URI.__str__())
+config.set_main_option(
+    "sqlalchemy.url",
+    settings.SQLALCHEMY_DATABASE_URI.__str__().replace("asyncpg", "psycopg2"),
+)
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
