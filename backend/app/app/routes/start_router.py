@@ -1,5 +1,5 @@
 from aiogram import F, Router
-from aiogram.filters import CommandStart, Command, StateFilter
+from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, KeyboardButton, Message, ReplyKeyboardMarkup
@@ -7,23 +7,26 @@ from aiogram.types.inline_keyboard_button import InlineKeyboardButton
 from aiogram.types.inline_keyboard_markup import InlineKeyboardMarkup
 from aiogram.types.reply_keyboard_remove import ReplyKeyboardRemove
 
-from app.models import AppModels
-from app.services.UserService import UserService
+from app.configs.bot import bot
+from app.metadata.ru import keyboards as ru_keyboards
+from app.metadata.eng import keyboards as eng_keyboards
+from app.models import app_models
+from app.services.user_service import UserService
 from app.utils.template_builder import render_template
 
 start_router = Router(name=__name__)
 
 
 class StartGroup(StatesGroup):
-    lang = State()
+    localization = State()
     name = State()
     phone_number = State()
 
 
-lang_keyboard = InlineKeyboardMarkup(
+localization_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="🇷🇺 ru", callback_data="lang_ru")],
-        [InlineKeyboardButton(text="🇺🇸 eng", callback_data="lang_eng")],
+        [InlineKeyboardButton(text="🇷🇺 ru", callback_data="localization:ru")],
+        [InlineKeyboardButton(text="🇺🇸 eng", callback_data="localization:eng")],
     ]
 )
 
@@ -41,25 +44,40 @@ async def cancel(message: Message, state: FSMContext):
     await message.answer("Окей, увидимся позже. Захочешь вернуться набери /start")
 
 
-@start_router.message(StartGroup.lang)
-async def choose_language_WA(message: Message, state: FSMContext):
+@start_router.message(StartGroup.localization)
+async def choose_localization_WA(message: Message, state: FSMContext):
     """
     WA — Wrong Action. Users may type eng or ru by keyboard,
     except of choosing it with inline_keyboard
     """
-    await message.answer(f"your state is {await state.get_state()}")
     await message.answer(
-        render_template("choose_language_WA.j2"), reply_markup=lang_keyboard
+        render_template("registration_choose_localization_WA.j2"),
+        reply_markup=localization_keyboard,
     )
 
 
 @start_router.message(StateFilter(StartGroup.name))
 async def get_user_name(message: Message, state: FSMContext):
-    await state.set_data(await state.get_data() | {"name": message.text})
+    user_data = await state.get_data()
+    localization = user_data["localization"]
+    await state.set_data(user_data | {"name": message.text})
     await message.answer(
-        f"Приятно познакомиться, {message.text}\n Поделись теперь номером телефона и можем начинать работу",
+        render_template(
+            "registration_phone.j2",
+            data={"localization": localization, "username": message.text},
+        ),
         reply_markup=ReplyKeyboardMarkup(
-            keyboard=[[KeyboardButton(text="SHARE", request_contact=True)]],
+            keyboard=[
+                [
+                    KeyboardButton(
+                        text="Поделиться номером телефона"
+                        if localization == "ru"
+                        else "Share phone number",
+                        request_contact=True,
+                    )
+                ]
+            ],
+            resize_keyboard=True,
         ),
     )
     await state.set_state(StartGroup.phone_number)
@@ -69,7 +87,7 @@ async def get_user_name(message: Message, state: FSMContext):
 async def get_phone_number(
     message: Message,
     state: FSMContext,
-    userService: UserService = UserService(),
+    user_service: UserService = UserService(),
 ):
     if message.contact is None:
         phone_number = message.text
@@ -81,43 +99,72 @@ async def get_phone_number(
     if phone_number is None:
         return
 
-    await message.answer("Спасибо")
     user_data: dict = await state.get_data()
-    await userService.create_user(
-        AppModels.User(
+    await user_service.create_user(
+        app_models.User(
             name=user_data["name"],
+            telegram_username=message.from_user.username
+            if message.from_user.username is not None
+            else "",
             phone_number=phone_number,
             telegram_id=message.from_user.id,
-            lang=user_data["lang"]
+            localization=user_data["localization"],
         )
+    )
+    keyboards = ru_keyboards if user_data["localization"] == "ru" else eng_keyboards
+    await message.answer(
+        render_template("welcome.j2", data={"localization": user_data["localization"]}),
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="🏡 Главное меню")]], resize_keyboard=True
+        ),
+    )
+    await message.answer(
+        render_template(
+            "new_user.j2", data={"localization": user_data["localization"]}
+        ),
+        reply_markup=keyboards.main_menu,
     )
     await state.clear()
 
+    counter = 0
+    while True:
+        try:
+            await bot.delete_message(message.chat.id, message.message_id - counter)
+            counter += 1
+        except Exception:
+            break
 
-@start_router.message(CommandStart)
+
+@start_router.message(F.text == "/start", StateFilter(None))
 async def welcome(
     message: Message,
     state: FSMContext,
-    userService: UserService = UserService(),
+    user_service: UserService = UserService(),
 ) -> None:
-    if await userService.get_user_by_telegramId(message.from_user.id) is not None:
+    if await user_service.get_user_by_telegramId(message.from_user.id) is not None:
         message_text: str = render_template("familiar_user.j2")
-        await message.answer(message_text, reply_markup=ReplyKeyboardRemove())
+        await message.answer(message_text)
         return
     message_text: str = render_template(
         "start.j2", {"username": message.from_user.username}
     )
 
-    await message.answer(message_text, reply_markup=lang_keyboard)
-    await state.set_state(StartGroup.lang)
+    await message.answer(message_text, reply_markup=localization_keyboard)
+    await state.set_state(StartGroup.localization)
 
 
-@start_router.callback_query(F.data.startswith("lang"))
-async def choose_language(callback: CallbackQuery, state: FSMContext):
-    await state.set_data({"lang": callback.data})
-    d = {"lang_ru": "русский", "lang_eng": "английский"}
-    await callback.message.answer(f"Супер, вы выбрали {d[callback.data]}")
+@start_router.callback_query(F.data.startswith("localization"))
+async def choose_localization(callback: CallbackQuery, state: FSMContext):
+    localization = callback.data.split(":")[-1]
+    await state.set_data({"localization": localization})
+    d = {"ru": "русский", "eng": "english"}
+    await callback.message.answer(
+        render_template(
+            "registration_localization_chosen.j2",
+            data={"localization": localization, "language": d[localization]},
+        )
+    )
     await state.set_state(StartGroup.name)
     await callback.message.answer(
-        "Как к вам обращаться? Введите имя и фамилию через пробел"
+        render_template("registration_name.j2", data={"localization": localization})
     )

@@ -1,0 +1,21 @@
+{% if localization == 'ru' %}
+<b>
+Общая информация о товаре:<br>
+<br>
+Категория: {{item.category}}<br>
+Краткое описание:<br>
+<i>{{item.description}}</i><br>
+Количество фотографий: {{item.photos|length}}<br>
+Желаемая цена: {{item.price}}
+</b>
+{% else %}
+<b>
+General information about item:<br>
+<br>
+Category: {{item.category}}<br>
+Short description:<br>
+<i>{{item.description}}</i><br>
+Photos quantity: {{item.photos|length}}<br>
+Wanted price: {{item.price}}
+</b>
+{% endif %}

@@ -1,0 +1,68 @@
+{% if localization == 'ru' %}
+{% if request.theme == 'sell' %}
+<b>
+Тема: {{ request.theme }}
+<br>
+Создано: {{ request.created_at }}
+<br>
+Статус: {{ request.status }}
+<br>
+{%if request.status == 'rejected'%}(<i>{{ request.details }}</i>)<br><br>{%endif%}
+Категория товара: {{ request.item.category }}
+<br>
+Краткое описание: {{ request.item.description }}
+<br>
+Желаемая цена: {{ request.item.price }}
+</b>
+
+{% else %}
+<b>
+Тема: {{ request.theme }}
+<br>
+Создано: {{ request.created_at.strftime('%Y-%m-%d %H:%M') }}
+<br>
+Статус: {{ request.status }}
+<br>
+{%if request.status == 'rejected'%}(<i>{{ request.details }}</i>)<br><br>{%endif%}
+Диалог:<br>
+{% for question, answer in request.conversation.items() %}
+— <i>{{question}}</i><br>
+— <i>{{answer}}</i><br>
+{% endfor %}
+</b>
+{% endif %}
+{% else %}
+{% if request.theme == 'sell' %}
+<b>
+Theme: {{ request.theme }}
+<br>
+Created: {{ request.created_at }}
+<br>
+Status: {{ request.status }}
+<br>
+{%if request.status == 'rejected'%}(<i>{{ request.details }}</i>)<br><br>{%endif%}
+Item Category: {{ request.item.category }}
+<br>
+Brief Description: {{ request.item.description }}
+<br>
+Desired Price: {{ request.item.price }}
+</b>
+
+{% else %}
+<b>
+Theme: {{ request.theme }}
+<br>
+Created: {{ request.created_at.strftime('%Y-%m-%d %H:%M') }}
+<br>
+Status: {{ request.status }}
+<br>
+{%if request.status == 'rejected'%}(<i>{{ request.details }}</i>)<br><br>{%endif%}
+Conversation:<br>
+{% for question, answer in request.conversation.items() %}
+— <i>{{question}}</i><br>
+— <i>{{answer}}</i><br>
+{% endfor %}
+</b>
+
+{% endif %}
+{% endif %}

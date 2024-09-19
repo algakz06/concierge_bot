@@ -14,6 +14,9 @@ class Settings(BaseSettings):
 
     ADMIN_TG_ID: str
 
+    LANDING_URL: str = "www.google.com"
+    APP_URL: str = "t.me/"
+
     POSTGRES_DB: str = "postgres"
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "1234"
@@ -22,16 +25,22 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://redis:6379"
 
+    ADMIN_CHAT_ID: int
+
+    YOUMONEY_APP_ID: str
+    YOUMONEY_SECRET_KEY: str
+
     TG_TOKEN: str
 
     GS_SCOPES: List[str] = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-    GS_SPREADSHEET_ID: str = ""
+    GS_SPREADSHEET_URL: str = ""
+    GS_CREDENTIALS_FILE: str = "app/configs/service_account.json"
 
     @computed_field
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
         return MultiHostUrl.build(
-            scheme="postgresql+psycopg2",
+            scheme="postgresql+asyncpg",
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
             host=self.POSTGRES_HOST,

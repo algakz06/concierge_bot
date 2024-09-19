@@ -1,0 +1,42 @@
+{% if request.theme == 'sell' %}
+<b>
+{% if request.telegram_username%}
+Заказчик: @{{ request.telegram_username }}
+{% else %}
+Заказчик: {{ request.telegram_id }}
+{% endif %}
+<br>
+Тема: {{ request.theme }}
+<br>
+Создано: {{ request.created_at }}
+<br>
+Статус: {{ request.status }}
+<br>
+Категория товара: {{ request.item.category }}
+<br>
+Краткое описание: {{ request.item.description }}
+<br>
+Желаемая цена: {{ request.item.price }}
+</b>
+
+{% else %}
+<b>
+{% if request.telegram_username%}
+Заказчик: @{{ request.telegram_username }}
+{% else %}
+Заказчик: {{ request.telegram_id }}
+{% endif %}
+<br>
+Тема: {{ request.theme }}
+<br>
+Создано: {{ request.created_at.strftime('%Y-%m-%d %H:%M') }}
+<br>
+Статус: {{ request.status }}
+<br>
+Диалог:<br>
+{% for question, answer in request.conversation.items() %}
+— <i>{{question}}</i><br>
+— <i>{{answer}}</i><br>
+{% endfor %}
+</b>
+{% endif %}
