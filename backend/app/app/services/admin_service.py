@@ -1,4 +1,6 @@
 from typing import List, Optional
+
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import app_models
 from app.repositories.admin_repository import AdminRepository
 
@@ -6,8 +8,8 @@ from app.repositories.admin_repository import AdminRepository
 class AdminService:
     repository: AdminRepository
 
-    def __init__(self) -> None:
-        self.repository = AdminRepository()
+    def __init__(self, db: AsyncSession) -> None:
+        self.repository = AdminRepository(db)
 
     async def get_request_list(
         self, target_status: Optional[str] = None

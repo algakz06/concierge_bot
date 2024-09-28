@@ -63,3 +63,4 @@ class Subscription(Base):
         default=datetime.datetime.now()
     )
     end_at: Mapped[datetime.datetime]
+    token_quantity: Mapped[int] = mapped_column(default=0)

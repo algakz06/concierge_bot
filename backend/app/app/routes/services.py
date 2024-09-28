@@ -10,6 +10,7 @@ from aiogram.types.inline_keyboard_markup import InlineKeyboardMarkup
 
 from app.configs.bot import bot
 from app.configs.settings import settings
+from app.configs.db import database_session_manager
 from app.middlewares.get_localization import GetLocalizationMiddleware
 from app.middlewares.get_subscription import GetSubscriptionMiddleware
 from app.models import app_models
@@ -69,7 +70,7 @@ async def collect_item_category(
     await callback.message.edit_text(text=text, reply_markup=None)
 
 
-@router.message(StateFilter(ServiceSellFlow.item_info))
+@router.message(F.text, StateFilter(ServiceSellFlow.item_info))
 async def collect_item_description(
     message: Message, localization: str, state: FSMContext
 ):
@@ -141,7 +142,7 @@ async def got_photo_limit(
     await callback.message.answer(text=text, reply_markup=None)
 
 
-@router.message(StateFilter(ServiceSellFlow.price))
+@router.message(F.text, StateFilter(ServiceSellFlow.price))
 async def collect_item_price(message: Message, localization: str, state: FSMContext):
     user_data = await state.get_data()
     user_data["item"]["price"] = message.text
@@ -185,7 +186,8 @@ async def is_request_correct(
     )
     user_data = await state.get_data() or {}
     item = user_data["item"]
-    user_service = UserService()
+    db = await anext(database_session_manager.get_session())
+    user_service = UserService(db)
     await user_service.register_sell_request(
         telegram_id=callback.from_user.id,
         item=app_models.Item(
@@ -242,7 +244,7 @@ async def general_service(
     await callback.message.answer(text=text)  # type: ignore
 
 
-@router.message(StateFilter(ServiceFlow.collect_data))
+@router.message(F.text, StateFilter(ServiceFlow.collect_data))
 async def collect(message: Message, localization: str, state: FSMContext):
     # id of reply or button. look for google sheet structure to understand
     user_data = await state.get_data()
@@ -254,7 +256,8 @@ async def collect(message: Message, localization: str, state: FSMContext):
             if localization == "ru"
             else "Redirected your request to operator. Thank you!"
         )
-        user_service = UserService()
+        db = await anext(database_session_manager.get_session())
+        user_service = UserService(db)
         await user_service.register_request(
             telegram_id=message.from_user.id,
             request_theme=user_data["request_theme"],
@@ -292,7 +295,8 @@ async def collect(message: Message, localization: str, state: FSMContext):
             if localization == "ru"
             else "Redirected your request to operator. He will contact you as soon as possible! Thank you!"
         )
-        user_service = UserService()
+        db = await anext(database_session_manager.get_session())
+        user_service = UserService(db)
         await user_service.register_request(
             telegram_id=message.from_user.id,
             request_theme=user_data["request_theme"],

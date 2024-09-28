@@ -10,6 +10,7 @@ from aiogram.types import (
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 
+from app.configs.db import database_session_manager
 from app.metadata.eng import keyboards as eng_keyboards
 from app.metadata.ru import keyboards as ru_keyboards
 from app.services.payment_service import PaymentService
@@ -70,7 +71,8 @@ async def choose_amount(
         await state.set_state(None)
         await message.delete()
 
-    payment_service = PaymentService()
+    db = await anext(database_session_manager.get_session())
+    payment_service = PaymentService(db)
     amount = float(amount)
     invoice = payment_service.get_invoice_url(amount)
 
@@ -115,7 +117,8 @@ async def choose_amount(
 async def check_payment(callback: CallbackQuery, localization: str, state: FSMContext):
     user_data = await state.get_data()
     invoice_id, amount = user_data["invoice"]["id"], user_data["invoice"]["amount"]
-    payment_service = PaymentService()
+    db = await anext(database_session_manager.get_session())
+    payment_service = PaymentService(db)
     keyboard = ru_keyboards if localization == "ru" else eng_keyboards
     if payment_service.check_invoice(invoice_id):
         await payment_service.top_up_balance(

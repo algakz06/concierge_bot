@@ -8,6 +8,7 @@ from aiogram.types.callback_query import CallbackQuery
 from aiogram.types.inline_keyboard_button import InlineKeyboardButton
 from aiogram.types.inline_keyboard_markup import InlineKeyboardMarkup
 
+from app.configs.db import database_session_manager
 from app.services.user_service import UserService
 from app.metadata.eng import keyboards as eng_keyboards
 from app.metadata.ru import keyboards as ru_keyboards
@@ -20,7 +21,8 @@ class GetSubscriptionMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: Dict[str, Any],
     ) -> Any:
-        user_service = UserService()
+        db = await anext(database_session_manager.get_session())
+        user_service = UserService(db)
         state: FSMContext = data["state"]
         user_data = await state.get_data()
         localization = user_data.get("localization", "")

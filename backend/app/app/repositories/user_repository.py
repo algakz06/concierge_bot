@@ -1,6 +1,7 @@
 from typing import Dict, List, Union
 import datetime
 
+from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.sql.functions import array_agg
@@ -14,8 +15,8 @@ from app.configs.logger import log
 class UserRepository:
     db: AsyncSession
 
-    def __init__(self):
-        self.db = database_session_manager.get_session()  # type: ignore
+    def __init__(self, db: AsyncSession):
+        self.db = db
 
     async def get_user_by_tg_id(self, telegram_id: int) -> Union[app_models.User, None]:
         db_user = await self.db.execute(
@@ -150,19 +151,36 @@ class UserRepository:
         result = await self.db.execute(
             select(db_models.Subscription).where(
                 db_models.Subscription.user_id == user_id,
-                db_models.Subscription.end_at > datetime.datetime.now(),
             )
         )
         subscription = result.scalars().first()
         if subscription is None:
             return subscription
         return app_models.SubscriptionDuration(
-            started_at=subscription.started_at, end_at=subscription.end_at
+            started_at=subscription.started_at,
+            end_at=subscription.end_at,
+            token_quantity=subscription.token_quantity,
         )
 
-    async def subscribe_user(self, session: AsyncSession, user_id: int, days: int):
+    async def check_user_subscription(self, user_id: int) -> bool:
+        result = await self.db.execute(
+            select(db_models.Subscription).where(
+                db_models.Subscription.user_id == user_id,
+                db_models.Subscription.end_at > datetime.datetime.now(),
+                or_(
+                    db_models.Subscription.token_quantity > 0,
+                    db_models.Subscription.token_quantity == -1,
+                ),
+            )
+        )
+        subscription = result.scalars().first()
+        return subscription is not None
+
+    async def subscribe_user(
+        self, session: AsyncSession, user_id: int, days: int, token_quantity: int
+    ):
         subscription = await self.get_user_subscription(user_id)
-        if subscription is not None:
+        if subscription is not None and self.check_user_subscription(user_id):
             result = await session.execute(
                 select(db_models.Subscription).where(
                     db_models.Subscription.user_id == user_id,
@@ -171,20 +189,29 @@ class UserRepository:
             )
             db_subscription = result.scalars().first()
             db_subscription.end_at = subscription.end_at + datetime.timedelta(days=days)  # type: ignore
+            if token_quantity == -1:
+                db_subscription.token_quantity = -1
+            elif db_subscription.token_quantity == -1:
+                db_subscription.token_quantity = token_quantity
+            else:
+                db_subscription.token_quantity += token_quantity
             return
         db_subscription = db_models.Subscription(
             user_id=user_id,
             end_at=datetime.datetime.now() + datetime.timedelta(days=days),
+            token_quantity=token_quantity,
         )
         session.add(db_subscription)
 
-    async def write_user_subscription(self, user_id: int, days: int, amount: float):
+    async def write_user_subscription(
+        self, user_id: int, days: int, amount: float, token_quantity: int
+    ):
         try:
             await self.write_off_balance(self.db, user_id, amount)
         except errors.NotEnoughMoney as e:
             await self.db.rollback()
             raise e
-        await self.subscribe_user(self.db, user_id, days)
+        await self.subscribe_user(self.db, user_id, days, token_quantity)
         await self.db.commit()
 
     async def get_user_requests(self, user_id: int) -> List[app_models.Request]:
@@ -258,3 +285,17 @@ class UserRepository:
                 details=request.details,
                 conversation=conversation,
             )
+
+    async def minus_token_quantity(self, user_id: int):
+        result = await self.db.execute(
+            select(db_models.Subscription).where(
+                db_models.Subscription.user_id == user_id,
+                db_models.Subscription.end_at > datetime.datetime.now(),
+            )
+        )
+        subscription = result.scalars().first()
+        if subscription is None:
+            return
+        if subscription.token_quantity != -1:
+            subscription.token_quantity -= 1
+            await self.db.commit()

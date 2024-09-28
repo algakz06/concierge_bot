@@ -1,5 +1,7 @@
 from typing import NamedTuple
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.supplier.yoomoney_supplier import YooMoneySupllier
 from app.repositories.user_repository import UserRepository
 
@@ -13,9 +15,9 @@ class PaymentService:
     yoomoney_supplier: YooMoneySupllier
     user_repository: UserRepository
 
-    def __init__(self) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.yoomoney_supplier = YooMoneySupllier()
-        self.user_repository = UserRepository()
+        self.user_repository = UserRepository(db)
 
     def get_invoice_url(self, amount: float) -> InvoiceDetails:
         invoice_id, payment_url = self.yoomoney_supplier.create_invoice(amount)

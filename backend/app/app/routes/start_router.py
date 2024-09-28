@@ -5,9 +5,9 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import CallbackQuery, KeyboardButton, Message, ReplyKeyboardMarkup
 from aiogram.types.inline_keyboard_button import InlineKeyboardButton
 from aiogram.types.inline_keyboard_markup import InlineKeyboardMarkup
-from aiogram.types.reply_keyboard_remove import ReplyKeyboardRemove
 
 from app.configs.bot import bot
+from app.configs.db import database_session_manager
 from app.metadata.ru import keyboards as ru_keyboards
 from app.metadata.eng import keyboards as eng_keyboards
 from app.models import app_models
@@ -87,8 +87,9 @@ async def get_user_name(message: Message, state: FSMContext):
 async def get_phone_number(
     message: Message,
     state: FSMContext,
-    user_service: UserService = UserService(),
 ):
+    db = await anext(database_session_manager.get_session())
+    user_service = UserService(db)
     if message.contact is None:
         phone_number = message.text
     else:
@@ -139,11 +140,17 @@ async def get_phone_number(
 async def welcome(
     message: Message,
     state: FSMContext,
-    user_service: UserService = UserService(),
 ) -> None:
-    if await user_service.get_user_by_telegramId(message.from_user.id) is not None:
-        message_text: str = render_template("familiar_user.j2")
-        await message.answer(message_text)
+    db = await anext(database_session_manager.get_session())
+    user_service = UserService(db)
+    user = await user_service.get_user_by_telegramId(message.from_user.id)
+    if user is not None:
+        message_text: str = render_template(
+            "familiar_user.j2",
+            data={"username": user.name, "localization": user.localization},
+        )
+        keyboards = ru_keyboards if user.localization == "ru" else eng_keyboards
+        await message.answer(message_text, reply_markup=keyboards.main_menu)
         return
     message_text: str = render_template(
         "start.j2", {"username": message.from_user.username}

@@ -6,6 +6,7 @@ import datetime
 class SubscriptionDuration(NamedTuple):
     started_at: datetime.datetime
     end_at: datetime.datetime
+    token_quantity: int
 
 
 class User:

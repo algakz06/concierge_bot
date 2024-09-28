@@ -7,6 +7,7 @@
 <br>
 💶 Мой кошелёк: {{user.balance}}₽<br>
 💎 Подписка до:  {{user.subscription}}<br>
+💎 Запросов осталось:  {% if user.token_quantity != -1 %}{{user.token_quantity}}{% else %}<i>Безлимит</i>{% endif %}<br>
 {% else %}
 My account<br>
 All nessesary information about your profile<br>

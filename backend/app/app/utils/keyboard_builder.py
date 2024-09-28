@@ -42,14 +42,18 @@ def prices(localization: str) -> InlineKeyboardMarkup:
     buttons = []
 
     for plan in prices:
-        days, price = plan["days"], plan["price"]
+        days, price, token_quantity = (
+            plan["days"],
+            plan["price"],
+            plan["token_quantity"],
+        )
         buttons.append(
             [
                 InlineKeyboardButton(
                     text=f"{days} дней за {price}₽"
                     if localization == "ru"
                     else f"{days} dasy for {price}₽",
-                    callback_data=f"price:{days}-{price}",
+                    callback_data=f"price:{days}-{price}-{token_quantity}",
                 )
             ]
         )

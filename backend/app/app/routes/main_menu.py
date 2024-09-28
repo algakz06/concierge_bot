@@ -1,4 +1,4 @@
-from aiogram.filters import Command, StateFilter
+from aiogram.filters import StateFilter
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import (
     CallbackQuery,
@@ -9,6 +9,7 @@ from aiogram.fsm.context import FSMContext
 
 from app.configs.settings import settings
 from app.configs.bot import bot
+from app.configs.db import database_session_manager
 from app.middlewares.get_localization import GetLocalizationMiddleware
 from app.services.user_service import UserService
 from app.utils import keyboard_builder
@@ -25,8 +26,7 @@ class HelpRequest(StatesGroup):
     content = State()
 
 
-@router.message(Command("/menu"))
-@router.message(F.text.in_(["menu", "🏡 Главное меню"]))
+@router.message(F.text.in_(["/menu", "menu", "🏡 Главное меню"]))
 async def main_menu(message: Message, localization: str):
     keyboards = ru_keyboards if localization == "ru" else eng_keyboards
     await message.answer(
@@ -49,7 +49,8 @@ async def main_menu_services(callback: CallbackQuery, localization: str):
 
 @router.callback_query(F.data == "main_menu:profile")
 async def main_menu_profile(callback: CallbackQuery, localization: str):
-    user_service = UserService()
+    db = await anext(database_session_manager.get_session())
+    user_service = UserService(db)
     user = await user_service.get_user_profile(callback.from_user.id)
     keyboards = ru_keyboards if localization == "ru" else eng_keyboards
     if user is None:
@@ -68,6 +69,9 @@ async def main_menu_profile(callback: CallbackQuery, localization: str):
                     else "Отсутствует"
                     if localization == "ru"
                     else "No subscription",
+                    "token_quantity": user.subscription.token_quantity
+                    if user.subscription is not None
+                    else 0,
                 },
             },
         ),
@@ -77,7 +81,8 @@ async def main_menu_profile(callback: CallbackQuery, localization: str):
 
 @router.callback_query(F.data == "main_menu:balance")
 async def main_menu_balance(callback: CallbackQuery, localization: str):
-    user_service = UserService()
+    db = await anext(database_session_manager.get_session())
+    user_service = UserService(db)
     balance = await user_service.get_user_balance(callback.from_user.id)
     keyboards = ru_keyboards if localization == "ru" else eng_keyboards
     await callback.message.edit_text(
@@ -112,7 +117,8 @@ async def open_help_request(
 
 @router.message(StateFilter(HelpRequest.content))
 async def help_request(message: Message, state: FSMContext, localization: str):
-    user_service = UserService()
+    db = await anext(database_session_manager.get_session())
+    user_service = UserService(db)
     await user_service.register_request(
         telegram_id=message.from_user.id,
         request_theme="support",
@@ -137,7 +143,8 @@ async def help_request(message: Message, state: FSMContext, localization: str):
 async def main_menu_requests(callback: CallbackQuery, localization: str):
     keyboards = ru_keyboards if localization == "ru" else eng_keyboards
     text = "<b>Ваши запросы:</b>" if localization == "ru" else "<b>Your requests:</b>"
-    user_service = UserService()
+    db = await anext(database_session_manager.get_session())
+    user_service = UserService(db)
     requests = await user_service.get_user_requests(callback.from_user.id)
     keyboard = keyboard_builder.requests(
         requests, receiver="user", localization=localization
@@ -152,7 +159,8 @@ async def main_menu_requests(callback: CallbackQuery, localization: str):
 @router.callback_query(F.data.startswith("user_requests:"))
 async def request_info(callback: CallbackQuery, localization: str, state: FSMContext):
     keyboards = ru_keyboards if localization == "ru" else eng_keyboards
-    user_service = UserService()
+    db = await anext(database_session_manager.get_session())
+    user_service = UserService(db)
     action = callback.data.split(":")[1]
     if action in ["prev", "next"]:
         offset = int(callback.data.split(":")[-1])
@@ -164,7 +172,9 @@ async def request_info(callback: CallbackQuery, localization: str, state: FSMCon
         )
         keyboard.inline_keyboard.append([keyboards.back_to_menu_button])
         await callback.message.edit_text(
-            text="Список запросов" if localization == "ru" else "Request list",
+            text="Услуги нашего Консьерж-сервиса"
+            if localization == "ru"
+            else "Our Concierge Service",
             reply_markup=keyboard,
         )
         return
@@ -179,14 +189,6 @@ async def request_info(callback: CallbackQuery, localization: str, state: FSMCon
             },
         ),
         reply_markup=keyboard,
-    )
-
-
-@router.callback_query(F.data == "main_menu:about")
-async def main_menu_about_bot(callback: CallbackQuery, localization: str):
-    keyboards = ru_keyboards if localization == "ru" else eng_keyboards
-    await callback.message.edit_text(
-        render_template("about.j2"), reply_markup=keyboards.back_to_menu
     )
 
 
