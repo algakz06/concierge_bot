@@ -3,9 +3,10 @@ from typing import Annotated, List, Optional, NamedTuple, Dict
 import datetime
 
 
-class SubscriptionDuration(NamedTuple):
+class Subscription(NamedTuple):
     started_at: datetime.datetime
     end_at: datetime.datetime
+    token_quantity: int
 
 
 class User:
@@ -16,7 +17,7 @@ class User:
     name: str
     localization: Annotated[str, "len <= 3, like ru, eng..."]
     balance: float
-    subscription: Optional[SubscriptionDuration]
+    subscription: Optional[Subscription]
 
     def __init__(
         self,
@@ -27,7 +28,7 @@ class User:
         localization: str,
         user_id: Optional[int] = None,
         balance: float = 0,
-        subscription: Optional[SubscriptionDuration] = None,
+        subscription: Optional[Subscription] = None,
     ):
         self.user_id = user_id
         self.name = name

@@ -10,6 +10,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
 from app.configs.bot import bot
+from app.configs.db import database_session_manager
 from app.services.admin_service import AdminService
 from app.supplier.google_sheets_supplier import GoogleSheetSupplier
 from app.supplier.redis_supplier import RedisSupplier
@@ -68,7 +69,8 @@ async def get_requests(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(F.data.startswith("requests_category:"))
 async def get_requests_category(callback: CallbackQuery, state: FSMContext):
     category = callback.data.split(":")[-1]
-    admin_service = AdminService()
+    db = await anext(database_session_manager.get_session())
+    admin_service = AdminService(db)
     match category:
         case "all":
             request_list = await admin_service.get_request_list()
@@ -83,8 +85,9 @@ async def get_requests_category(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == "admin:support")
 async def get_support_requests(callback: CallbackQuery):
-    admin = AdminService()
-    support_list = await admin.get_support_requests()
+    db = await anext(database_session_manager.get_session())
+    admin_service = AdminService(db)
+    support_list = await admin_service.get_support_requests()
     keyboard = requests(support_list)
     keyboard.inline_keyboard.append([admin_keyboards.back_to_menu_button])
     await callback.message.edit_text(text="Список запросов", reply_markup=keyboard)
@@ -106,13 +109,14 @@ async def reload_data(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin:upload_stats")
 async def upload_stats(callback: CallbackQuery):
-    admin = AdminService()
+    db = await anext(database_session_manager.get_session())
+    admin_service = AdminService(db)
     gs = GoogleSheetSupplier(RedisSupplier())
 
-    users = await admin.get_users()
+    users = await admin_service.get_users()
     gs.upload_users_statistic(users)
 
-    requests = await admin.get_requests()
+    requests = await admin_service.get_requests()
     gs.upload_request_statistic(requests)
 
     await callback.message.edit_text(
@@ -127,19 +131,20 @@ async def upload_stats(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("admin_requests:"))
 async def request_info(callback: CallbackQuery, state: FSMContext):
-    admin = AdminService()
+    db = await anext(database_session_manager.get_session())
+    admin_service = AdminService(db)
     action = callback.data.split(":")[1]
     user_data = await state.get_data()
     if action in ["prev", "next"]:
         offset = int(callback.data.split(":")[-1])
         keyboard = requests(
-            await admin.get_request_list(user_data["request_category"]), offset
+            await admin_service.get_request_list(user_data["request_category"]), offset
         )
         keyboard.inline_keyboard.append([admin_keyboards.back_to_menu_button])
         await callback.message.edit_text(text="Список запросов", reply_markup=keyboard)
         return
     request_id = int(action)
-    request_info = await admin.get_request_info(request_id)
+    request_info = await admin_service.get_request_info(request_id)
     await state.update_data(request_id=request_id, request_theme=request_info.theme)
     keyboard = admin_keyboards.request_keyboard
     keyboard = keyboard + [
@@ -170,13 +175,14 @@ async def request_info(callback: CallbackQuery, state: FSMContext):
 async def request_action(callback: CallbackQuery, state: FSMContext):
     action = callback.data.split(":")[1]
     user_data = await state.get_data()
-    admin = AdminService()
+    db = await anext(database_session_manager.get_session())
+    admin_service = AdminService(db)
     match action:
         case "get_photos":
             for image_id in user_data.get("image_ids", []):
                 await bot.send_photo(chat_id=callback.from_user.id, photo=image_id)
         case "close":
-            await admin.close_request(int(user_data.get("request_id", 0)))
+            await admin_service.close_request(int(user_data.get("request_id", 0)))
             await callback.message.edit_text(
                 text="Запрос закрыт",
                 reply_markup=InlineKeyboardMarkup(
@@ -190,15 +196,19 @@ async def request_action(callback: CallbackQuery, state: FSMContext):
                     ]
                 ),
             )
-            request = await admin.get_request_info(int(user_data.get("request_id", 0)))
+            request = await admin_service.get_request_info(
+                int(user_data.get("request_id", 0))
+            )
             await bot.send_message(
                 chat_id=request.telegram_id,
                 text=f"Ваш запрос номер {request.id} на тему {request.theme} закрыт",
             )
 
         case "accept":
-            await admin.accept_request(int(user_data.get("request_id", 0)))
-            request_info = await admin.get_request_info(user_data.get("request_id", 0))
+            await admin_service.accept_request(int(user_data.get("request_id", 0)))
+            request_info = await admin_service.get_request_info(
+                user_data.get("request_id", 0)
+            )
             await callback.message.edit_text(
                 text="Статус задачи успешно изменен\n\n"
                 + render_template("request_info.j2", data={"request": request_info}),
@@ -213,7 +223,9 @@ async def request_action(callback: CallbackQuery, state: FSMContext):
                     ]
                 ),
             )
-            request = await admin.get_request_info(int(user_data.get("request_id", 0)))
+            request = await admin_service.get_request_info(
+                int(user_data.get("request_id", 0))
+            )
             await bot.send_message(
                 chat_id=request.telegram_id,
                 text=f"Ваш запрос номер {request.id} на тему {request.theme} принят",
@@ -239,9 +251,10 @@ async def request_action(callback: CallbackQuery, state: FSMContext):
 async def reject_reason(message: Message, state: FSMContext):
     reason = message.text
     user_data = await state.get_data()
-    admin = AdminService()
-    await admin.reject_request(int(user_data.get("request_id", 0)), reason)
-    request = await admin.get_request_info(int(user_data.get("request_id", 0)))
+    db = await anext(database_session_manager.get_session())
+    admin_service = AdminService(db)
+    await admin_service.reject_request(int(user_data.get("request_id", 0)), reason)
+    request = await admin_service.get_request_info(int(user_data.get("request_id", 0)))
     await bot.send_message(
         chat_id=request.telegram_id,
         text=f"Ваш запрос номер {request.id} на тему {request.theme} отклонен по причине: {reason}",

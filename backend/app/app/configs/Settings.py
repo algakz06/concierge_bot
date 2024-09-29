@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     ADMIN_TG_ID: str
 
     LANDING_URL: str = "www.google.com"
+    TERMS_URL: str = "https://docs.google.com/document/d/12hML4G7ZG4ci_Zi_VrpeNsP1XpczrWm0bu7wTdwvVhk/edit?usp=sharing"
     APP_URL: str = "t.me/"
 
     POSTGRES_DB: str = "postgres"

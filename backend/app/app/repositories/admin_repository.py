@@ -3,16 +3,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.sql.functions import array_agg
 
-from app.configs.db import database_session_manager
-from app.configs.logger import log
 from app.models import db_models, app_models
 
 
 class AdminRepository:
     db: AsyncSession
 
-    def __init__(self):
-        self.db = database_session_manager.get_session()  # type: ignore
+    def __init__(self, db: AsyncSession):
+        self.db = db  # type: ignore
 
     async def get_request_list(
         self, target_status: Optional[str] = None
@@ -165,6 +163,7 @@ class AdminRepository:
                 db_models.User,
                 db_models.Subscription.started_at,
                 db_models.Subscription.end_at,
+                db_models.Subscription.token_quantity,
             ).join(
                 db_models.Subscription,
                 db_models.User.id == db_models.Subscription.user_id,
@@ -180,11 +179,11 @@ class AdminRepository:
                 name=user.name,
                 localization=user.localization,
                 balance=user.balance,
-                subscription=app_models.SubscriptionDuration(
-                    started_at=started_at, end_at=end_at
+                subscription=app_models.Subscription(
+                    started_at=started_at, end_at=end_at, token_quantity=token_quantity
                 ),
             )
-            for user, started_at, end_at in users
+            for user, started_at, end_at, token_quantity in users
         ]
 
     async def get_requests(self) -> List[app_models.Request]:

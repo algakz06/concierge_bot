@@ -26,7 +26,7 @@ services:
       timeout: 3s
       retries: 3
 
-  api:
+  bot:
     build: ./backend
     command: python3.12 -m app
     restart: always
@@ -34,8 +34,6 @@ services:
       - .env
     volumes:
       - "./backend/app:/code"
-    ports:
-      - "3333:3333"
     depends_on:
       - db
 

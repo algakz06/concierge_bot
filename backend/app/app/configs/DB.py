@@ -1,5 +1,4 @@
-from typing import AsyncIterator
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncSession
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from app.configs.settings import settings
@@ -14,12 +13,22 @@ class DatabaseSessionManager:
             echo=True,
             max_overflow=-1,
         )
-        self.session_maker = sessionmaker(
-            self.engine, class_=AsyncSession, expire_on_commit=False
+        self._session_maker = async_sessionmaker(
+            autocommit=False, autoflush=False, bind=self.engine, expire_on_commit=False
         )
+        # self.session_maker = sessionmaker(
+        #     self.engine, class_=AsyncSession, expire_on_commit=False
+        # )
 
-    def get_session(self):
-        return scoped_session(self.session_maker)
+    async def get_session(self):
+        session = self._session_maker()
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+        finally:
+            await session.close()
+        # return scoped_session(self.session_maker)
 
 
 database_session_manager = DatabaseSessionManager()

@@ -1,1 +1,5 @@
-Знакомы?
+{% if localization == 'ru' %}
+Уважаемый {{username}}, выберите раздел меню:
+{% else %}
+Dear {{username}}, choose a menu section:
+{% endif %}

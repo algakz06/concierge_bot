@@ -6,8 +6,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types.inline_keyboard_button import InlineKeyboardButton
 from aiogram.types.inline_keyboard_markup import InlineKeyboardMarkup
 
+from app.configs.db import database_session_manager
 from app.metadata.eng import keyboards as eng_keyboards
 from app.metadata.ru import keyboards as ru_keyboards
+from app.services import user_service
 from app.services.user_service import UserService
 from app.middlewares.get_localization import GetLocalizationMiddleware
 from app.utils import keyboard_builder
@@ -41,7 +43,21 @@ async def buy_subscription(
     F.data.startswith("price"), StateFilter(SubscriptionFlow.choose_plan)
 )
 async def choose_plan(callback: CallbackQuery, localization: str, state: FSMContext):
-    days, price = list(map(lambda x: int(x), callback.data.split(":")[-1].split("-")))
+    keyboards = ru_keyboards if localization == "ru" else eng_keyboards
+    if callback.data == "price:trial":
+        user_service = UserService(await anext(database_session_manager.get_session()))
+        await user_service.subscribe_user(callback.from_user.id, 7, 0, 10)
+        await callback.message.edit_text(
+            "Вы успешно подписались на пробный период на 7 дней"
+            if localization == "ru"
+            else "You have successfully subscribed for a 7-day trial period",
+            reply_markup=keyboards.back_to_menu,
+        )
+        return
+
+    days, price, token_quantity = list(
+        map(lambda x: int(x), callback.data.split(":")[-1].split("-"))
+    )
     text = (
         f"Вы выбрали план подписки на {days} дней за {price}₽. Верно?"
         if localization == "ru"
@@ -67,7 +83,10 @@ async def choose_plan(callback: CallbackQuery, localization: str, state: FSMCont
     )
     await callback.message.edit_text(text, reply_markup=keyboard)
     await state.set_state(SubscriptionFlow.confirm_subscription)
-    await state.set_data(await state.get_data() | {"price": price, "days": days})
+    await state.set_data(
+        await state.get_data()
+        | {"price": price, "days": days, "token_quantity": token_quantity}
+    )
 
 
 @router.callback_query(F.data.startswith("subscription_plan"))
@@ -77,10 +96,14 @@ async def confirm_subscription(
     answer = callback.data.split(":")[-1]
     keyboards = ru_keyboards if localization == "ru" else eng_keyboards
     if answer == "yes":
-        user_service = UserService()
+        db = await anext(database_session_manager.get_session())
+        user_service = UserService(db)
         user_data = await state.get_data()
         if await user_service.subscribe_user(
-            callback.from_user.id, user_data["days"], user_data["price"]
+            callback.from_user.id,
+            user_data["days"],
+            user_data["price"],
+            user_data["token_quantity"],
         ):
             await callback.message.edit_text(
                 text="Подписка оформлена!"

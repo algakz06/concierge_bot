@@ -4,6 +4,7 @@ from aiogram.types import TelegramObject
 
 from typing import Callable, Awaitable, Any, Dict
 
+from app.configs.db import database_session_manager
 from app.services.user_service import UserService
 
 
@@ -18,7 +19,8 @@ class GetLocalizationMiddleware(BaseMiddleware):
         user_data = await state.get_data()
         localization = user_data.get("localization", "")
         if not localization:
-            user_service = UserService()
+            db = await anext(database_session_manager.get_session())
+            user_service = UserService(db)
             user_id = data["event_from_user"].id
             localization = await user_service.get_user_localization(user_id)
         data["localization"] = localization
