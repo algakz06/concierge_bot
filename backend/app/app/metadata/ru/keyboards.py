@@ -1,7 +1,5 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from app.configs.settings import settings
-
 main_menu = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="🗂️ Виды услуг", callback_data="main_menu:services")],
@@ -22,7 +20,7 @@ main_menu = InlineKeyboardMarkup(
                 text="📂 Мои запросы", callback_data="main_menu:requests"
             )
         ],
-        [InlineKeyboardButton(text="📝 О боте", url=settings.TERMS_URL)],
+        [InlineKeyboardButton(text="📝 О боте", callback_data="main_menu:about")],
     ]
 )
 

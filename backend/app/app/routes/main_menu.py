@@ -226,3 +226,10 @@ async def main_menu_subscription(
         render_template("subscription.j2", data={"localization": localization}),
         reply_markup=keyboards.subscription_keyboard,
     )
+
+
+@router.callback_query(F.data == "main_menu:about")
+async def main_menu_about(callback: CallbackQuery, localization: str):
+    text = render_template("about.j2", data={"localization": localization})
+    keyboards = ru_keyboards if localization == "ru" else eng_keyboards
+    await callback.message.edit_text(text=text, reply_markup=keyboards.back_to_menu)
