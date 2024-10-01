@@ -10,7 +10,7 @@ router = Router()
 router.message.middleware(GetLocalizationMiddleware())
 
 
-@router.message(F.text == "/change_localization")
+@router.message(F.text == "/change_language")
 async def change_localization(message: Message, localization: str):
     localization = {"ru": "eng", "eng": "ru"}[localization]
     language = {"ru": "русский", "eng": "english"}
