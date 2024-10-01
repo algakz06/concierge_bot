@@ -9,7 +9,6 @@ from aiogram.types.inline_keyboard_markup import InlineKeyboardMarkup
 from app.configs.db import database_session_manager
 from app.metadata.eng import keyboards as eng_keyboards
 from app.metadata.ru import keyboards as ru_keyboards
-from app.services import user_service
 from app.services.user_service import UserService
 from app.middlewares.get_localization import GetLocalizationMiddleware
 from app.utils import keyboard_builder

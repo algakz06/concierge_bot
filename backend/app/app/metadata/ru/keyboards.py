@@ -20,7 +20,11 @@ main_menu = InlineKeyboardMarkup(
                 text="📂 Мои запросы", callback_data="main_menu:requests"
             )
         ],
-        [InlineKeyboardButton(text="📝 О боте", callback_data="main_menu:about")],
+        [
+            InlineKeyboardButton(
+                text="📝 О услугах Консьержа", callback_data="main_menu:about"
+            )
+        ],
     ]
 )
 
