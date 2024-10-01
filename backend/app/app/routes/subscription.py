@@ -55,7 +55,7 @@ async def choose_plan(callback: CallbackQuery, localization: str, state: FSMCont
         return
 
     days, price, token_quantity = list(
-        map(lambda x: int(x), callback.data.split(":")[-1].split("-"))
+        map(lambda x: int(x), callback.data.split(":")[-1].split("-", maxsplit=2))
     )
     text = (
         f"Вы выбрали план подписки на {days} дней за {price}₽. Верно?"
