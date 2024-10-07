@@ -157,6 +157,27 @@ class AdminRepository:
         request.details = details
         await self.db.commit()
 
+    async def get_user_by_telegram_username(
+        self, telegram_username: str
+    ) -> app_models.User | None:
+        user = await self.db.execute(
+            select(
+                db_models.User,
+            ).where(db_models.User.telegram_username == telegram_username)
+        )
+        user = user.scalars().first()
+        if user is None:
+            return user
+        return app_models.User(
+            user_id=user.id,
+            telegram_id=user.telegram_id,
+            telegram_username=user.telegram_username,
+            phone_number=user.phone_number,
+            name=user.name,
+            localization=user.localization,
+            balance=user.balance,
+        )
+
     async def get_users(self) -> List[app_models.User]:
         users = await self.db.execute(
             select(
@@ -240,3 +261,11 @@ class AdminRepository:
             )
 
         return requests
+
+    async def top_up_balance(self, user_id: int, amount: float):
+        result = await self.db.execute(
+            select(db_models.User).where(db_models.User.id == user_id)
+        )
+        user = result.scalars().first()
+        user.balance += amount
+        await self.db.commit()

@@ -1,3 +1,4 @@
+import json
 from aiogram.filters import StateFilter
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import (
@@ -15,6 +16,7 @@ from app.configs.db import database_session_manager
 from app.middlewares.get_localization import GetLocalizationMiddleware
 from app.routes.subscription import SubscriptionFlow
 from app.services.user_service import UserService
+from app.supplier.redis_supplier import RedisSupplier
 from app.utils import keyboard_builder
 from app.utils.template_builder import render_template
 from app.metadata.ru import keyboards as ru_keyboards
@@ -65,6 +67,7 @@ async def main_menu_profile(callback: CallbackQuery, localization: str):
                 "localization": localization,
                 "user": {
                     "id": user.telegram_id,
+                    "name": user.name,
                     "phone": user.phone_number,
                     "balance": user.balance,
                     "subscription": user.subscription.end_at.strftime("%d-%m-%Y %H:%M")
@@ -189,6 +192,7 @@ async def request_info(callback: CallbackQuery, localization: str, state: FSMCon
             "user_request_info.j2",
             data={
                 "request": request,
+                "localization": localization,
             },
         ),
         reply_markup=keyboard,
@@ -223,13 +227,20 @@ async def main_menu_subscription(
         return
 
     await callback.message.edit_text(
-        render_template("subscription.j2", data={"localization": localization}),
+        render_template(
+            "subscription.j2",
+            data={"localization": localization, "offer_link": settings.TERMS_URL},
+        ),
         reply_markup=keyboards.subscription_keyboard,
     )
 
 
 @router.callback_query(F.data == "main_menu:about")
 async def main_menu_about(callback: CallbackQuery, localization: str):
-    text = render_template("about.j2", data={"localization": localization})
+    # text = render_template("about.j2", data={"localization": localization})
+    redis = RedisSupplier()
+    metadata = json.loads(redis.get_data("metadata")).get("metadata")
     keyboards = ru_keyboards if localization == "ru" else eng_keyboards
-    await callback.message.edit_text(text=text, reply_markup=keyboards.back_to_menu)
+    await callback.message.edit_text(
+        text=metadata["about_button"][localization], reply_markup=keyboards.back_to_menu
+    )

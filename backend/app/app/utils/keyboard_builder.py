@@ -61,6 +61,25 @@ def prices(localization: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
+def amounts() -> InlineKeyboardMarkup:
+    redis = RedisSupplier()
+    prices = json.loads(redis.get_data("prices"))
+    buttons = []
+
+    for plan in prices:
+        price = plan["price"]
+        buttons.append(
+            [
+                InlineKeyboardButton(
+                    text=f"{price}₽",
+                    callback_data=f"balance:amount:{price}",
+                )
+            ]
+        )
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 def requests(
     requests: List[app_models.Request],
     offset: int = 0,

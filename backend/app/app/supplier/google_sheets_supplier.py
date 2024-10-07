@@ -19,6 +19,8 @@ class GoogleSheetSupplier:
     prices_worksheet: Worksheet
     user_stats_worksheet: Worksheet
     request_stats_worksheet: Worksheet
+    metadata_worksheet: Worksheet
+    env_worksheet: Worksheet
 
     services_ru_raw: List[dict]
     services_eng_raw: List[dict]
@@ -36,11 +38,28 @@ class GoogleSheetSupplier:
         self.user_stats_worksheet = self.spreadsheet.worksheet("user_stats")
         self.request_stats_worksheet = self.spreadsheet.worksheet("request_stats")
         self.prices_worksheet = self.spreadsheet.worksheet("prices")
+        self.metadata_worksheet = self.spreadsheet.worksheet("metadata")
 
         self.redis_supplier = redis
         self.get_rows()
         self.get_services()
         self.get_prices()
+        self.get_metadata()
+        self._set_env()
+
+    def _set_env(self) -> None:
+        self.env_worksheet = self.spreadsheet.worksheet("env")
+        env_data = self.env_worksheet.get_all_records()
+        env = dict()
+        for row in env_data:
+            env[row["key"]] = row["value"]
+        settings.TG_TOKEN = env.get("TG_TOKEN")
+        settings.YOUMONEY_APP_ID = env.get("YOUMONEY_APP_ID")
+        settings.YOUMONEY_SECRET_KEY = env.get("YOUMONEY_SECRET_KEY")
+        settings.ADMIN_TG_ID = env.get("ADMIN_TG_ID")
+        settings.ADMIN_CHAT_ID = env.get("ADMIN_CHAT_ID")
+        settings.ADMIN_USERNAME = env.get("ADMIN_USERNAME")
+        settings.TERMS_URL = env.get("TERMS_URL")
 
     def get_table(self) -> Spreadsheet:
         return self.gs.open_by_url(self.TABLE_URL)
@@ -49,6 +68,7 @@ class GoogleSheetSupplier:
         self.services_eng_raw = self.services_worksheet_eng.get_all_records()
         self.services_ru_raw = self.services_worksheet_ru.get_all_records()
         self.prices_raw = self.prices_worksheet.get_all_records()
+        self.metadata_raw = self.metadata_worksheet.get_all_records()
 
     def get_services(self) -> None:
         eng_services = {}
@@ -80,6 +100,15 @@ class GoogleSheetSupplier:
 
     def get_prices(self):
         self.redis_supplier.store_data("prices", json.dumps(self.prices_raw))
+
+    def get_metadata(self):
+        d = {"metadata": {}}
+        for row in self.metadata_raw:
+            d["metadata"][row["name"]] = {
+                "ru": row["ru"],
+                "eng": row["eng"],
+            }
+        self.redis_supplier.store_data("metadata", json.dumps(d))
 
     def upload_users_statistic(self, users: List[User]) -> None:
         self.user_stats_worksheet.update(

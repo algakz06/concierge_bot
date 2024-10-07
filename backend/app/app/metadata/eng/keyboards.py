@@ -56,11 +56,7 @@ help_keyboard = InlineKeyboardMarkup(
 
 subscription_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
-        [
-            InlineKeyboardButton(
-                text="Buy a subscription", callback_data="subscription:buy"
-            )
-        ],
+        [InlineKeyboardButton(text="Subscribe", callback_data="subscription:buy")],
         [back_to_menu_button],
     ]
 )

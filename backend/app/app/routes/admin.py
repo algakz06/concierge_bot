@@ -28,11 +28,35 @@ class AdminGroup(StatesGroup):
 
 @router.message(F.text == "/admin")
 async def admin_panel(message: Message, state: FSMContext):
-    if settings.ADMIN_TG_ID != str(message.from_user.id):
+    if settings.ADMIN_TG_ID != message.from_user.id:
         return
     await state.clear()
     await message.answer(
         text="Добро пожаловать", reply_markup=admin_keyboards.admin_panel_keyboard
+    )
+
+
+@router.message(F.text.startswith("/top_up"))
+async def top_up_balance(message: Message):
+    if settings.ADMIN_TG_ID != message.from_user.id:
+        return
+    username, amount = message.text.split(" ")[1:]
+    try:
+        amount = float(amount)
+    except ValueError:
+        await message.answer(text="Неверный формат суммы")
+        return
+    db = await anext(database_session_manager.get_session())
+    admin_service = AdminService(db)
+    user = await admin_service.get_user_by_telegram_username(username)
+    if user is None:
+        await message.answer(text="Пользователь не найден")
+        return
+    await admin_service.top_up_balance(user.user_id, amount)
+    await message.answer(text="Баланс пополнен")
+    await bot.send_message(
+        chat_id=user.telegram_id,
+        text=f"Ваш баланс пополнен на {amount} рублей",
     )
 
 

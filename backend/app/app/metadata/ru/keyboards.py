@@ -53,7 +53,7 @@ subscription_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="Купить подписку", callback_data="subscription:buy"
+                text="Оформить подписку", callback_data="subscription:buy"
             )
         ],
         [back_to_menu_button],

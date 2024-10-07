@@ -1,4 +1,4 @@
-from typing import List
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic_core import MultiHostUrl
@@ -12,10 +12,12 @@ class Settings(BaseSettings):
 
     TEMPLATES_DIR: str = "app/jinja_templates/"
 
-    ADMIN_TG_ID: str
+    ADMIN_TG_ID: Optional[int] = None
+    ADMIN_CHAT_ID: Optional[int] = None
+    ADMIN_USERNAME: Optional[str] = None
 
     LANDING_URL: str = "www.google.com"
-    TERMS_URL: str = "https://docs.google.com/document/d/12hML4G7ZG4ci_Zi_VrpeNsP1XpczrWm0bu7wTdwvVhk/edit?usp=sharing"
+    TERMS_URL: str = ""
     APP_URL: str = "t.me/"
 
     POSTGRES_DB: str = "postgres"
@@ -26,14 +28,11 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = "redis://redis:6379"
 
-    ADMIN_CHAT_ID: int
+    YOUMONEY_APP_ID: Optional[str] = None
+    YOUMONEY_SECRET_KEY: Optional[str] = None
 
-    YOUMONEY_APP_ID: str
-    YOUMONEY_SECRET_KEY: str
+    TG_TOKEN: str = ""
 
-    TG_TOKEN: str
-
-    GS_SCOPES: List[str] = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
     GS_SPREADSHEET_URL: str = ""
     GS_CREDENTIALS_FILE: str = "app/configs/service_account.json"
 

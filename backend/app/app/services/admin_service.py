@@ -36,3 +36,11 @@ class AdminService:
 
     async def get_requests(self):
         return await self.repository.get_requests()
+
+    async def get_user_by_telegram_username(
+        self, telegram_username: str
+    ) -> app_models.User | None:
+        return await self.repository.get_user_by_telegram_username(telegram_username)
+
+    async def top_up_balance(self, user_id: int, amount: float):
+        await self.repository.top_up_balance(user_id, amount)
