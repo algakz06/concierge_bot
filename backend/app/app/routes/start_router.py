@@ -109,7 +109,7 @@ async def get_phone_number(
             if message.from_user.username is not None
             else "",
             phone_number=phone_number,
-            telegram_id=message.from_user.id,
+            telegram_id=str(message.from_user.id),
             localization=user_data["localization"],
         )
     )

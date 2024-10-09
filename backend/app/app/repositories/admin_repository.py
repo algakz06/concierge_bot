@@ -153,7 +153,7 @@ class AdminRepository:
             select(db_models.Request).where(db_models.Request.id == request_id)
         )
         request = request.scalars().first()
-        request.status = status
+        request.status = "rejected"
         request.details = details
         await self.db.commit()
 

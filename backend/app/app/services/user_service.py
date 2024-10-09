@@ -16,7 +16,7 @@ class UserService:
 
     async def get_user_by_telegramId(self, telegram_id: int):
         try:
-            user = await self.repository.get_user_by_tg_id(telegram_id)
+            user = await self.repository.get_user_by_tg_id(str(telegram_id))
         except errors.UserNotFound:
             return None
         return user
@@ -28,14 +28,14 @@ class UserService:
             log.error(f"Error occured while creating user: {e}")
             return
 
-    async def set_localization(self, user_id: int, localization: str):
-        await self.repository.set_localization(user_id, localization)
+    async def set_localization(self, telegram_id: int, localization: str):
+        await self.repository.set_localization(str(telegram_id), localization)
 
-    async def get_user_localization(self, user_id: int) -> str:
-        return await self.repository.get_user_localization(user_id)
+    async def get_user_localization(self, telegram_id: int) -> str:
+        return await self.repository.get_user_localization(str(telegram_id))
 
-    async def get_user_balance(self, user_id: int) -> float:
-        return await self.repository.get_user_balance(user_id)
+    async def get_user_balance(self, telegram_id: int) -> float:
+        return await self.repository.get_user_balance(str(telegram_id))
 
     async def get_user_profile(self, telegram_id: int) -> app_models.User | None:
         user = await self.get_user_by_telegramId(telegram_id)
@@ -52,7 +52,7 @@ class UserService:
         request_theme: str,
         conversation: List[Dict[str, str]],
     ) -> None:
-        user = await self.repository.get_user_by_tg_id(telegram_id)
+        user = await self.repository.get_user_by_tg_id(str(telegram_id))
         request_id = await self.repository.create_request(
             user_id=user.user_id,
             request_theme=request_theme,
@@ -65,7 +65,7 @@ class UserService:
     async def register_sell_request(
         self, telegram_id: int, item: app_models.Item
     ) -> None:
-        user = await self.repository.get_user_by_tg_id(telegram_id)
+        user = await self.repository.get_user_by_tg_id(str(telegram_id))
         request_id = await self.repository.create_request(
             user_id=user.user_id, request_theme="sell"
         )
@@ -76,7 +76,7 @@ class UserService:
     async def subscribe_user(
         self, telegram_id: int, days: int, price: float, token_quantity: int
     ) -> bool:
-        user = await self.repository.get_user_by_tg_id(telegram_id)
+        user = await self.repository.get_user_by_tg_id(str(telegram_id))
         try:
             await self.repository.write_user_subscription(
                 user.user_id, days=days, amount=price, token_quantity=token_quantity
@@ -86,11 +86,11 @@ class UserService:
         return True
 
     async def is_subscribed(self, telegram_id: int) -> bool:
-        user = await self.repository.get_user_by_tg_id(telegram_id)
+        user = await self.repository.get_user_by_tg_id(str(telegram_id))
         return await self.repository.check_user_subscription(user.user_id)
 
     async def get_user_requests(self, telegram_id: int) -> List[app_models.Request]:
-        user = await self.repository.get_user_by_tg_id(telegram_id)
+        user = await self.repository.get_user_by_tg_id(str(telegram_id))
         return await self.repository.get_user_requests(user.user_id)
 
     async def get_request_info(self, request_id: int) -> app_models.Request | None:
@@ -99,5 +99,5 @@ class UserService:
     async def get_user_subscription(
         self, telegram_id: int
     ) -> app_models.Subscription | None:
-        user = await self.repository.get_user_by_tg_id(telegram_id)
+        user = await self.repository.get_user_by_tg_id(str(telegram_id))
         return await self.repository.get_user_subscription(user.user_id)

@@ -11,7 +11,7 @@ class User(Base):
     __tablename__ = "user"
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str]
-    telegram_id: Mapped[int] = mapped_column(unique=True)
+    telegram_id: Mapped[str] = mapped_column(unique=True)
     telegram_username: Mapped[str]
     localization: Mapped[str]
     phone_number: Mapped[str]

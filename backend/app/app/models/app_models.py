@@ -12,7 +12,7 @@ class Subscription(NamedTuple):
 class User:
     user_id: Optional[int]
     telegram_username: str
-    telegram_id: int
+    telegram_id: str
     phone_number: str
     name: str
     localization: Annotated[str, "len <= 3, like ru, eng..."]
@@ -23,7 +23,7 @@ class User:
         self,
         name: str,
         phone_number: str,
-        telegram_id: int,
+        telegram_id: str,
         telegram_username: str,
         localization: str,
         user_id: Optional[int] = None,

@@ -120,9 +120,9 @@ async def got_photo_limit(
 ):
     if callback.data.split(":")[-1] == "take_new":
         text = (
-            "Отправьте фотографии товара с разных ракурсов. Не более 10 и не менее 6"
+            "Отправьте фотографии товара с разных ракурсов. Отправьте 4 фотографии"
             if localization == "ru"
-            else "Send photos of item you sell with different angles. Not more 10 and not less 6"
+            else "Send photos of item you sell with different angles. Send 4 photos"
         )
         text += (
             "\n\nОтправьте команду /stop, когда закончите отправку фотографий"
@@ -231,6 +231,7 @@ async def general_service(
     user_data["request_theme"] = request_theme
 
     await state.set_state(ServiceFlow.collect_data)
+    await state.set_data(user_data)
 
     if (text := replies.get(target_id, None)) is None:
         await callback.message.answer(  # type: ignore
@@ -261,7 +262,8 @@ async def collect(message: Message, localization: str, state: FSMContext):
         await user_service.register_request(
             telegram_id=message.from_user.id,
             request_theme=user_data["request_theme"],
-            conversation=user_data["conversation"],
+            conversation=user_data.get("conversation", False)
+            or {"Сформулируйте ваш запрос одним сообщением": message.text},
         )
         text = "Поступил новый запрос от @{username}\n\n"
         text += "Заказчик, {username}\n"

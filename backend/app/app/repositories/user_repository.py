@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.sql.functions import array_agg
 
-from app.configs.db import database_session_manager
 from app.models import db_models, app_models
 from app.metadata import errors
 from app.configs.logger import log
@@ -18,7 +17,7 @@ class UserRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_user_by_tg_id(self, telegram_id: int) -> Union[app_models.User, None]:
+    async def get_user_by_tg_id(self, telegram_id: str) -> Union[app_models.User, None]:
         db_user = await self.db.execute(
             select(db_models.User).where(db_models.User.telegram_id == telegram_id)
         )
@@ -47,18 +46,16 @@ class UserRepository:
         self.db.add(db_user)
         await self.db.commit()
 
-    async def get_user_localization(self, telegram_id: int) -> str:
+    async def get_user_localization(self, telegram_id: str) -> str:
         result = await self.db.execute(
             select(db_models.User.localization).where(
                 db_models.User.telegram_id == telegram_id
             )
         )
         localization = result.first()
-        if localization is None:
-            raise Exception
         return localization[0]
 
-    async def set_localization(self, telegram_id: int, localization: str):
+    async def set_localization(self, telegram_id: str, localization: str):
         result = await self.db.execute(
             select(db_models.User).where(db_models.User.telegram_id == telegram_id)
         )
@@ -67,7 +64,7 @@ class UserRepository:
             db_user.localization = localization
             await self.db.commit()
 
-    async def get_user_balance(self, telegram_id: int) -> float:
+    async def get_user_balance(self, telegram_id: str) -> float:
         result = await self.db.execute(
             select(db_models.User.balance).where(
                 db_models.User.telegram_id == telegram_id
@@ -78,7 +75,7 @@ class UserRepository:
             raise Exception
         return balance[0]
 
-    async def top_up_balance(self, amount: float, telegram_id: int):
+    async def top_up_balance(self, amount: float, telegram_id: str):
         result = await self.db.execute(
             select(db_models.User).where(db_models.User.telegram_id == telegram_id)
         )
