@@ -173,7 +173,7 @@ async def choose_localization(callback: CallbackQuery, state: FSMContext):
         )
     )
     text = (
-        f'Продолжая вы соглашаетесь с нашими <a href="{settings.TERMS_URL}">правилами и условиями</a> использования бота. Нажмите на кнопку ниже, чтобы продолжить'
+        f'Продолжая вы соглашаетесь с нашими <a href="{settings.TERMS_URL}">правилами и условиями</a> использования Консьерж сервиса. Нажмите на кнопку ниже, чтобы продолжить'
         if localization == "ru"
         else f'By continuing you agree with our <a href="{settings.TERMS_URL}">terms and conditions</a>. Press the button below to proceed'
     )
