@@ -259,11 +259,14 @@ async def collect(message: Message, localization: str, state: FSMContext):
         )
         db = await anext(database_session_manager.get_session())
         user_service = UserService(db)
+        if not user_data.get("conversation", ""):
+            user_data["conversation"] = [
+                {"Сформулируйте ваш запрос одним сообщением": message.text}
+            ]
         await user_service.register_request(
             telegram_id=message.from_user.id,
             request_theme=user_data["request_theme"],
-            conversation=user_data.get("conversation", False)
-            or {"Сформулируйте ваш запрос одним сообщением": message.text},
+            conversation=user_data["conversation"],
         )
         text = "Поступил новый запрос от @{username}\n\n"
         text += "Заказчик, {username}\n"

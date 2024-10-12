@@ -139,19 +139,39 @@ async def help_request(message: Message, state: FSMContext, localization: str):
         else "Your request has been sent",
         reply_markup=ru_keyboards.main_menu,
     )
+    conversation = [{"Введите ваш запрос одним сообщением": message.text}]
+    text = "Поступил новый запрос от @{username}\n\n"
+    text += "Заказчик, {username}\n"
+    text += "Тема, {request_theme}\n"
+    text += "Диалог с пользователем:"
+    for conv in conversation:
+        question, answer = next(iter(conv.items()))
+        text += f"\n— {question}\n— {answer}"
     await bot.send_message(
+        text=text.format(
+            username=message.from_user.username or message.from_user.id,
+            request_theme="Поддержка",
+        ),
         chat_id=settings.ADMIN_CHAT_ID,
-        text=f"Пользователь {message.from_user.id} отправил запрос. Тема: help",
     )
 
 
 @router.callback_query(F.data == "main_menu:requests")
 async def main_menu_requests(callback: CallbackQuery, localization: str):
     keyboards = ru_keyboards if localization == "ru" else eng_keyboards
-    text = "<b>Ваши запросы:</b>" if localization == "ru" else "<b>Your requests:</b>"
     db = await anext(database_session_manager.get_session())
     user_service = UserService(db)
     requests = await user_service.get_user_requests(callback.from_user.id)
+    if len(requests) > 0:
+        text = (
+            "<b>Ваши запросы:</b>" if localization == "ru" else "<b>Your requests:</b>"
+        )
+    else:
+        text = (
+            "<b>У вас пока не было запросов</b>"
+            if localization == "ru"
+            else "<b>You have no requests</b>"
+        )
     keyboard = keyboard_builder.requests(
         requests, receiver="user", localization=localization
     )
@@ -241,6 +261,17 @@ async def main_menu_about(callback: CallbackQuery, localization: str):
     redis = RedisSupplier()
     metadata = json.loads(redis.get_data("metadata")).get("metadata")
     keyboards = ru_keyboards if localization == "ru" else eng_keyboards
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="🗂️ Услуги" if localization == "ru" else "🗂️ Services",
+                    callback_data="main_menu:services",
+                )
+            ],
+            [keyboards.back_to_menu_button],
+        ]
+    )
     await callback.message.edit_text(
-        text=metadata["about_button"][localization], reply_markup=keyboards.back_to_menu
+        text=metadata["about_button"][localization], reply_markup=keyboard
     )
